@@ -11,6 +11,9 @@ import android.widget.RemoteViews;
 import com.weimi.push.WeimiPushReceiver;
 import com.weimi.push.data.PayLoadMessage;
 
+/**
+ * Created by 卫彪 on 2016/5/11.
+ */
 public class PushMsgReceiver extends WeimiPushReceiver {
 	private int rq = 0;
 	private Notification notification;
@@ -23,6 +26,7 @@ public class PushMsgReceiver extends WeimiPushReceiver {
 			return;
 		Intent intent1 = new Intent();
 		intent1.setClass(context, MainActivity.class);
+		intent1.putExtra("pushMsg", alert);
 		PendingIntent pendingIntent = PendingIntent.getActivity(context, rq++,
 				intent1, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -30,9 +34,8 @@ public class PushMsgReceiver extends WeimiPushReceiver {
 				.getSystemService(Context.NOTIFICATION_SERVICE);
 
 		if (notification == null) {
-			notification = new Notification(R.mipmap.ic_launcher, context
-					.getResources().getString(R.string.app_name),
-					System.currentTimeMillis());
+			notification = new Notification(R.mipmap.ic_launcher,
+					context.getResources().getString(R.string.app_name), System.currentTimeMillis());
 			notification.contentView = new RemoteViews(
 					context.getPackageName(), R.layout.notifycation_layout);
 		}
@@ -42,14 +45,24 @@ public class PushMsgReceiver extends WeimiPushReceiver {
 
 		notification.icon = R.mipmap.ic_launcher;
 		notification.tickerText = alert;
-		notification.flags = Notification.FLAG_AUTO_CANCEL
-				| Notification.FLAG_SHOW_LIGHTS;
+		notification.flags = Notification.FLAG_AUTO_CANCEL | Notification.FLAG_SHOW_LIGHTS;
 		notification.contentIntent = pendingIntent;
 		notification.ledARGB = 0xff00ff00;
 		notification.ledOnMS = 500;
 		notification.ledOffMS = 2000;
 		nManager.cancel(300);
 		nManager.notify(300, notification);
+
+		PushUtil.context = context;
+		if (payLoadMessage.sound != null) {
+			if(SharedPreferenceUtil.getInstance().getVibration()){
+				SoundVibrateUtil.checkIntervalTimeAndVibrate(context);
+			}
+			if(SharedPreferenceUtil.getInstance().getSound()){
+				SoundVibrateUtil.checkIntervalTimeAndSound(context);
+			}
+		}
+
 		// TODO Auto-generated method stub
 	}
 }

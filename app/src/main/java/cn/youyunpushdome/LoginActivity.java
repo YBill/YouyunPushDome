@@ -1,65 +1,36 @@
 package cn.youyunpushdome;
 
-import android.os.Handler;
-import android.os.Message;
+import android.content.Intent;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import com.weimi.push.WeimiPush;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.List;
 
 import matrix.sdk.WeimiInstance;
 import matrix.sdk.data.AuthResultData;
-import matrix.sdk.message.HistoryMessage;
 import matrix.sdk.message.WChatException;
-import matrix.sdk.util.HttpCallback;
 
+/**
+ * Created by 卫彪 on 2016/5/11.
+ */
 public class LoginActivity extends AppCompatActivity {
-
-    private String TAG = "Bill";
-    private EditText editStart;
-    private EditText editEnd;
-    private TextView textGetInfo;
-    private TextView textSetTime;
-    private boolean login = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        editStart = (EditText) findViewById(R.id.edit_start);
-        editEnd = (EditText) findViewById(R.id.edit_end);
-        textGetInfo = (TextView) findViewById(R.id.text_get);
-        textSetTime = (TextView) findViewById(R.id.text_set);
-    }
+        findViewById(R.id.btn_login).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                login();
+            }
+        });
 
-    public void handleLogin(View v) {
-        login();
-    }
-
-    public void handleStartPush(View v) {
-        startPush();
-    }
-
-    public void handleGetPushInfo(View v) {
-        getInfo();
-    }
-
-    public void handleSetPushInfo(View v) {
-        set();
     }
 
     private void login() {
@@ -75,12 +46,17 @@ public class LoginActivity extends AppCompatActivity {
                                     clientIdDefault, clientSecretDefault, 30);
 
                     if (authResultData.success) {
-                        login = true;
-                        final String uid = WeimiInstance.getInstance().getUID();
-                        Log.v(TAG, "uid:" + uid);
+                        String uid = WeimiInstance.getInstance().getUID();
+                        if(TextUtils.isEmpty(uid)){
+                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.nouid), Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                         runOnUiThread(new Runnable() {
                             public void run() {
-                                Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(LoginActivity.this, getResources().getString(R.string.login_success), Toast.LENGTH_SHORT).show();
+                                Intent intent = new Intent(LoginActivity.this, PushActivity.class);
+                                startActivity(intent);
+                                finish();
                             }
                         });
                     }
@@ -95,149 +71,7 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    private void startPush(){
-        if(!login)
-            return;
-        boolean startpush = WeimiPush.connect(
-                LoginActivity.this.getApplicationContext(),
-                WeimiPush.pushServerIp, false);
-        if (startpush) {
-            Toast.makeText(LoginActivity.this, "PUSH服务启动成功", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(LoginActivity.this, "PUSH服务启动失败", Toast.LENGTH_SHORT).show();
-        }
-    }
 
-    private void set() {
-        String start = editStart.getText().toString().trim();
-        String end = editEnd.getText().toString().trim();
-        if (TextUtils.isEmpty(start) || TextUtils.isEmpty(end)) {
-            return;
-        }
-        WeimiInstance.getInstance().shortPushCreate(start, end,
-                new HttpCallback() {
-
-                    @Override
-                    public void onResponseHistory(
-                            List<HistoryMessage> historyMessage) {
-                        // TODO Auto-generated method stub
-
-                    }
-
-                    @Override
-                    public void onResponse(String result) {
-                        if (result != null) {
-                            JSONObject jsonObject;
-                            try {
-                                jsonObject = new JSONObject(result);
-                                String code = jsonObject
-                                        .optString("code", null);
-                                if (code != null && code.equals("200")) {
-                                    Log.v(TAG, "result:" + result);
-                                    Message message = handler.obtainMessage();
-                                    message.what = 2;
-                                    message.obj = "set success";
-                                    handler.sendMessage(message);
-                                }
-                            } catch (JSONException e) {
-                                Message message = handler.obtainMessage();
-                                message.what = 2;
-                                message.obj = "error";
-                                handler.sendMessage(message);
-                                e.printStackTrace();
-                            }
-                        }
-
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        Log.v(TAG, "e:" + e.getMessage());
-                        Message message = handler.obtainMessage();
-                        message.what = 2;
-                        message.obj = "error";
-                        handler.sendMessage(message);
-                    }
-
-                    @Override
-                    public void onResponse(byte[] arg0) {
-                        // TODO Auto-generated method stub
-
-                    }
-                }, 60);
-    }
-
-    private void getInfo() {
-        WeimiInstance.getInstance().shortPushShowUser(new HttpCallback() {
-
-            @Override
-            public void onResponseHistory(List<HistoryMessage> arg0) {
-                // TODO Auto-generated method stub
-
-            }
-
-            @Override
-            public void onResponse(String result) {
-                if (result != null) {
-                    JSONObject jsonObject;
-                    try {
-                        jsonObject = new JSONObject(result);
-                        String code = jsonObject.optString("code", null);
-                        if (code != null && code.equals("200")) {
-                            String msg = jsonObject.optJSONObject("msg").toString();
-                            Log.v(TAG, "msg:" + msg);
-                            if (!TextUtils.isEmpty(msg)){
-                                Message message = handler.obtainMessage();
-                                message.what = 1;
-                                message.obj = msg;
-                                handler.sendMessage(message);
-                            }
-                        }
-                    } catch (JSONException e) {
-                        Message message = handler.obtainMessage();
-                        message.what = 1;
-                        message.obj = "error";
-                        handler.sendMessage(message);
-                        e.printStackTrace();
-                    }
-                }
-
-            }
-
-            @Override
-            public void onError(Exception e) {
-                Message message = handler.obtainMessage();
-                message.what = 1;
-                message.obj = "error";
-                handler.sendMessage(message);
-                Log.v(TAG, "e:" + e.getMessage());
-
-            }
-
-            @Override
-            public void onResponse(byte[] arg0) {
-                // TODO Auto-generated method stub
-
-            }
-        }, 120);
-    }
-
-    private Handler handler = new Handler() {
-        public void handleMessage(android.os.Message msg) {
-            switch (msg.what) {
-                case 1:
-                    String str = (String) msg.obj;
-                    textGetInfo.setText(str);
-                    break;
-                case 2:
-                    String message = (String) msg.obj;
-                    textSetTime.setText(message);
-                    break;
-                default:
-                    break;
-            }
-        };
-    };
 
     /**
      * 根据设备生成一个唯一标识
