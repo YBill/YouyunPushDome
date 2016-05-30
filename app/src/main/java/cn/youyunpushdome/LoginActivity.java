@@ -46,13 +46,13 @@ public class LoginActivity extends AppCompatActivity {
                                     clientIdDefault, clientSecretDefault, 30);
 
                     if (authResultData.success) {
-                        String uid = WeimiInstance.getInstance().getUID();
-                        if(TextUtils.isEmpty(uid)){
-                            Toast.makeText(LoginActivity.this, getResources().getString(R.string.nouid), Toast.LENGTH_SHORT).show();
-                            return;
-                        }
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                String uid = WeimiInstance.getInstance().getUID();
+                                if(TextUtils.isEmpty(uid)){
+                                    Toast.makeText(LoginActivity.this, getResources().getString(R.string.nouid), Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
                                 Toast.makeText(LoginActivity.this, getResources().getString(R.string.login_success), Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(LoginActivity.this, PushActivity.class);
                                 startActivity(intent);
